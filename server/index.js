@@ -26,6 +26,13 @@ const searchBy = async (t, sb, o) => {
       }
     }
   });
+  if (sb !== "id") {
+    result.sort((a, b) => a[sb] - b[sb]);
+  }
+  debugger;
+  if (o !== "asc") {
+    result = result.reverse();
+  }
   return result;
 };
 app.get("/api/ping", (req, res) => {
