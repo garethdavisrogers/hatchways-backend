@@ -29,7 +29,6 @@ const searchBy = async (t, sb, o) => {
   if (sb !== "id") {
     result.sort((a, b) => a[sb] - b[sb]);
   }
-  debugger;
   if (o !== "asc") {
     result = result.reverse();
   }
@@ -47,8 +46,21 @@ app.get("/api/ping", (req, res) => {
 app.get("/api/posts", async (req, res) => {
   try {
     const { tags, sortBy, direction } = req.query;
+    let sbOptions = [
+      "id",
+      "tags",
+      "author",
+      "authorId",
+      "reads",
+      "likes",
+      "popularity",
+    ];
     let sb = sortBy ? sortBy : "id";
     let dir = direction ? direction : "asc";
+    debugger;
+    if (!sbOptions.includes(sortBy)) {
+      return res.status(400).json({ error: "sortBy parameter is invalid" });
+    }
     if (tags) {
       const search = await searchBy(tags, sb, dir);
       console.log(search);
