@@ -13,14 +13,17 @@ function fetchInit() {
 }
 
 const searchBy = async (t, sb, o) => {
-  debugger;
   const data = await fetchInit();
   let result = [];
   t = t.split(",");
   console.log(t);
   data.forEach((item) => {
-    if (item.tags.includes(t)) {
-      result.push(item);
+    let tags = item.tags;
+    for (let i = 0; i < tags.length; i++) {
+      if (tags[i].includes(t)) {
+        result.push(item);
+        break;
+      }
     }
   });
   return result;
@@ -40,7 +43,7 @@ app.get("/api/posts", async (req, res) => {
     let sb = sortBy ? sortBy : "id";
     let dir = direction ? direction : "asc";
     if (tags) {
-      const search = searchBy(tags, sb, dir);
+      const search = await searchBy(tags, sb, dir);
       console.log(search);
       res.status(200).send(search);
     } else {
