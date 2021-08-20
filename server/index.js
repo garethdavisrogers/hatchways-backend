@@ -3,36 +3,56 @@ const app = express();
 const port = process.env.PORT || 3000;
 const axios = require("axios");
 
-function fetchInit() {
-  return axios
-    .get("https://api.hatchways.io/assessment/blog/posts", {
-      params: { tag: "tech" },
-    })
-    .then((res) => res.data.posts)
-    .catch(() => console.log("fetch failed"));
+async function fetchInit(tags) {
+  tags = tags.split(",");
+  let userCache = [];
+  let searchPerTag = tags.map((tag) =>
+    axios
+      .get("https://api.hatchways.io/assessment/blog/posts", {
+        params: { tag: tag },
+      })
+      .then((response) => response.data.posts)
+      .catch((err) => {
+        console.error(err);
+      })
+  );
+  return searchPerTag;
 }
 
 const searchBy = async (t, sb, o) => {
-  const data = await fetchInit();
+  let postCache = [];
   let result = [];
-  t = t.split(",");
-  console.log(t);
-  data.forEach((item) => {
-    let tags = item.tags;
-    for (let i = 0; i < tags.length; i++) {
-      if (tags[i].includes(t)) {
-        result.push(item);
-        break;
+  const data = await fetchInit(t);
+  return await Promise.all(data)
+    .then((res) => {
+      const merged = [].concat.apply([], res);
+      merged.forEach((post) => {
+        const tags = post.tags;
+        tags.forEach((tag) => {
+          if (t.includes(tag)) {
+            if (!postCache.includes(post.id)) {
+              postCache.push(post.id);
+              result.push(post);
+            }
+          }
+        });
+      });
+      return result;
+    })
+    .then((res) =>
+      res.sort((a, b) => {
+        a[sb] - b[sb];
+      })
+    )
+    .then((res) => {
+      if (o !== "asc") {
+        res.reverse();
       }
-    }
-  });
-  if (sb !== "id") {
-    result.sort((a, b) => a[sb] - b[sb]);
-  }
-  if (o !== "asc") {
-    result = result.reverse();
-  }
-  return result;
+      return res;
+    })
+    .catch((err) => {
+      console.error(err);
+    });
 };
 app.get("/api/ping", (req, res) => {
   try {
@@ -57,14 +77,14 @@ app.get("/api/posts", async (req, res) => {
     ];
     let sb = sortBy ? sortBy : "id";
     let dir = direction ? direction : "asc";
-    debugger;
     if (!sbOptions.includes(sortBy)) {
       return res.status(400).json({ error: "sortBy parameter is invalid" });
     }
+    debugger;
     if (tags) {
-      const search = await searchBy(tags, sb, dir);
-      console.log(search);
-      res.status(200).send(search);
+      return await searchBy(tags, sb, dir).then((response) =>
+        res.status(200).send(response)
+      );
     } else {
       return res.status(400).json({ error: "Tags parameter is required" });
     }
