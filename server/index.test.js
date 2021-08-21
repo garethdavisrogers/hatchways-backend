@@ -2,6 +2,10 @@ import request from "supertest";
 import server from "./index";
 
 describe("endpoint: api/ping", () => {
+  afterAll(() => {
+    server.close();
+  });
+
   describe("on get req", () => {
     test("should respond with status 200 code", async () => {
       const res = await request(server).get("/api/ping");

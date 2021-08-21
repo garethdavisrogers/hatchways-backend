@@ -2,8 +2,7 @@ import express from "express";
 const app = express();
 const port = process.env.PORT || 3000;
 import axios from "axios";
-// const coreJs = require("core-js");
-// const rR = require("regenerator-runtime");
+const requestCache = {};
 
 async function fetchInit(tags) {
   tags = tags.split(",");
@@ -68,6 +67,12 @@ app.get("/api/ping", (req, res) => {
 app.get("/api/posts", async (req, res) => {
   try {
     const { tags, sortBy, direction } = req.query;
+    let sb = sortBy ? sortBy : "id";
+    let dir = direction ? direction : "asc";
+    let lookup = tags + sb + dir;
+    if (requestCache[lookup]) {
+      return res.status(200).json(requestCache[lookup]);
+    }
     let sbOptions = [
       "id",
       "tags",
@@ -77,15 +82,16 @@ app.get("/api/posts", async (req, res) => {
       "likes",
       "popularity",
     ];
-    let sb = sortBy ? sortBy : "id";
-    let dir = direction ? direction : "asc";
+
     if (!sbOptions.includes(sb)) {
       return res.status(400).json({ error: "sortBy parameter is invalid" });
     }
     if (tags) {
-      return await searchBy(tags, sb, dir).then((response) =>
-        res.status(200).json({ posts: response })
-      );
+      return await searchBy(tags, sb, dir).then((response) => {
+        let index = tags + sb + dir;
+        requestCache[index] = response;
+        return res.status(200).json({ posts: response });
+      });
     } else {
       return res.status(400).json({ error: "Tags parameter is required" });
     }
