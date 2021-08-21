@@ -1,7 +1,9 @@
-const express = require("express");
+import express from "express";
 const app = express();
 const port = process.env.PORT || 3000;
-const axios = require("axios");
+import axios from "axios";
+// const coreJs = require("core-js");
+// const rR = require("regenerator-runtime");
 
 async function fetchInit(tags) {
   tags = tags.split(",");
@@ -77,13 +79,12 @@ app.get("/api/posts", async (req, res) => {
     ];
     let sb = sortBy ? sortBy : "id";
     let dir = direction ? direction : "asc";
-    if (!sbOptions.includes(sortBy)) {
+    if (!sbOptions.includes(sb)) {
       return res.status(400).json({ error: "sortBy parameter is invalid" });
     }
-    debugger;
     if (tags) {
       return await searchBy(tags, sb, dir).then((response) =>
-        res.status(200).send(response)
+        res.status(200).json({ posts: response })
       );
     } else {
       return res.status(400).json({ error: "Tags parameter is required" });
@@ -93,6 +94,5 @@ app.get("/api/posts", async (req, res) => {
     return res.status(500).send("Server Error");
   }
 });
-app.listen(port, () => {
-  console.log("node is listening");
-});
+const server = app.listen(port, () => {});
+export default server;
